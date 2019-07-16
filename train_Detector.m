@@ -29,7 +29,7 @@ freq = session.data.sampleRate;
 
 % Get labels
 ann_struct(1).data = getEvents(session.data.annLayer,0);
-[class_label,label_time] = parse_Labels(ann_struct);
+[class_label,label_time, CPR_time] = parse_Labels(ann_struct);
 
 % Get features
 time_offset = [];
@@ -49,3 +49,17 @@ for i = 1:num_data_segments
     
 end
 
+%% Save calculated feature matrix
+
+%% Train classifier and perform CV
+% Split data into folds
+
+% Random forest
+% LASSO
+
+%% Perform unsupervised feature learning
+% Search 5, 10, 20, 30, 60, 90, 120, 180, 240 mins before arrest
+% Here instead of 10 minute segments we will check 60 secs before & after
+% time point
+
+% Examine within and across patients

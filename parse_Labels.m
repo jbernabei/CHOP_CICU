@@ -1,4 +1,4 @@
-function [class_label,label_time] = parse_Labels(ann_struct)
+function [class_label,label_time, CPR_time] = parse_Labels(ann_struct)
 % This function parses class labels for a supervised machine learning
 % problem from an ieeg.org annotation structure
 
@@ -31,6 +31,10 @@ for i = 1:num_ann
         class_label(i) = 7;
     else
         class_label(i) = 8;
+    end
+    
+    if strcmp(ann_struct(1).data(i).type,'CPR Onset')
+        CPR_time = ann_struct(1).data(i).start./1e6;
     end
 end
 
