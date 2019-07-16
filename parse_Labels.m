@@ -1,4 +1,4 @@
-function [class_label] = parse_Labels(ann_struct)
+function [class_label,label_time] = parse_Labels(ann_struct)
 % This function parses class labels for a supervised machine learning
 % problem from an ieeg.org annotation structure
 
@@ -14,6 +14,7 @@ function [class_label] = parse_Labels(ann_struct)
 num_ann = size(ann_struct(1).data,2);
 for i = 1:num_ann
     ann_label = ann_struct(1).data(i).description;
+    label_time(i) = ann_struct(1).data(i).start./1e6;
     if strcmp(ann_label,'Normal continuous')
         class_label(i) = 1;
     elseif strcmp(ann_label,'Normal discontinuous')

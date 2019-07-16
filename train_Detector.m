@@ -27,6 +27,7 @@ patient_ID = {'01','02','03','04','05','06','07','08','09','10','11','12',...
 session = IEEGSession('RID0060',ID,PW);
 
 % Get labels
-ann_struct(1).data = getEvents(session.data.annLayer,0)
+ann_struct(1).data = getEvents(session.data.annLayer,0);
+[class_label,label_time] = parse_Labels(ann_struct);
 
 % Get features
