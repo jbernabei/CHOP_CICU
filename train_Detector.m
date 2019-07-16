@@ -25,9 +25,27 @@ patient_ID = {'01','02','03','04','05','06','07','08','09','10','11','12',...
 
 %% Start session
 session = IEEGSession('RID0060',ID,PW);
+freq = session.data.sampleRate;
 
 % Get labels
 ann_struct(1).data = getEvents(session.data.annLayer,0);
 [class_label,label_time] = parse_Labels(ann_struct);
 
 % Get features
+time_offset = [];
+
+% Select channels
+channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
+channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
+
+% Get number of data segments for supervised learning problem
+num_data_segments = length(class_label);
+length_data = 600; % 600 seconds = 10 minutes
+
+% loop through data segments
+for i = 1:num_data_segments
+    full_raw_data = session.data.getvalues(ceil(label_time(i)*freq):ceil((label_time(i)+length_data)*freq), channel_nums_1)';
+    % Do feature calculation (in progress)
+    
+end
+
