@@ -37,35 +37,39 @@ high_freq = 50; % Hz
 [bz, az] = impinvar(b,a,sampleRate);
 values=filter(bz,az,values); % This is generating almost 50% Nans
 
-%% Theta band power
+% Theta band power
 fcutlow1=4;   %low cut frequency in Hz
 fcuthigh1=8;   %high cut frequency in Hz
 p_theta = mean(bandpower(values,sampleRate,[fcutlow1 fcuthigh1]));
 
-%% Alpha band power
+% Alpha band power
 fcutlow2=8;   %low cut frequency in Hz    
 fcuthigh2=12; %high cut frequcency in Hz
 p_alpha = mean(bandpower(values,sampleRate,[fcutlow2 fcuthigh2]));
 
-%% Filter for beta band
+% Filter for beta band
 fcutlow3=12;   %low cut frequency in Hz
 fcuthigh3=25;   %high cut frequency in Hz
 p_beta = mean(bandpower(values,sampleRate,[fcutlow3 fcuthigh3]));
 
-%% Filter for 25-40 Hz low gamma band
+% Filter for 25-40 Hz low gamma band
 fcutlow4=25;   %low cut frequency in Hz
 fcuthigh4=40;   %high cut frequency in Hz
 p_lowgamma = mean(bandpower(values,sampleRate,[fcutlow4 fcuthigh4]));
 
-%% Calculate features based on linelength
+% Calculate features based on linelength
 Line_length = sum(abs(diff(values)));
 
-%% Calculate signal energy
+% Calculate signal energy
 Energy = sum(values.^2);
 
-%% Calculate wavelet entropy
+% Calculate wavelet entropy
 Entropy = wentropy(values,'shannon');
 
-%% Return vector of features
-features = [p_theta p_alpha p_beta p_lowgamma Entropy Line_length Energy];
+% Calculate ensemble synchrony
+adj_matrix = correlation_Matrix(values);
+Synch = mean(mean(adj_matrix));
+
+% Return vector of features
+features = [p_theta p_alpha p_beta p_lowgamma Line_length Energy Entropy Synch];
 end
