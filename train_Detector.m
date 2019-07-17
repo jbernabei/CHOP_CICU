@@ -20,15 +20,19 @@ ID = 'jbernabei';
 PW = 'jbe_ieeglogin.bin';
 
 % List endings for patient IDs to use
-patient_ID = {'01','02','03','04','05','06','07','08','09','10','11','12',...
-    '13_D01','14','15','16','17_D01','18_D01','19','20','21_D01','22','23','24'};
+patient_ID = {'01','02','03','04','05','06','07'};
+addpath(genpath('jsonlab-1.5'))
 
 %% Start session
-session = IEEGSession('RID0060',ID,PW);
+num_pts = size(patient_ID,2);
+
+for pt = 1:num_pts
+session = IEEGSession(sprintf('CHOP_CICU_00%s',patient_ID{pt}),ID,PW);
 freq = session.data.sampleRate;
 
 % Get labels
-ann_struct(1).data = getEvents(session.data.annLayer,0);
+%ann_struct(1).data = getEvents(session.data.annLayer,0);
+ann_struct = loadjson(sprintf('/Users/jbernabei/Downloads/CHOP_json/CHOP_CICU_%s_annotations_edit_new.iann_EEG labels.json',patient_ID{pt}));
 [class_label,label_time, CPR_time] = parse_Labels(ann_struct);
 
 % Get features
@@ -36,7 +40,7 @@ time_offset = [];
 
 % Select channels
 channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
-channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
+%channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
 
 % Get number of data segments for supervised learning problem
 num_data_segments = length(class_label);
@@ -46,9 +50,9 @@ length_data = 600; % 600 seconds = 10 minutes
 for i = 1:num_data_segments
     full_raw_data = session.data.getvalues(ceil(label_time(i)*freq):ceil((label_time(i)+length_data)*freq), channel_nums_1)';
     % Do feature calculation (in progress)
-    
+    size(full_raw_data)
 end
-
+end
 %% Save calculated feature matrix
 
 %% Train classifier and perform CV
@@ -63,3 +67,4 @@ end
 % time point
 
 % Examine within and across patients
+

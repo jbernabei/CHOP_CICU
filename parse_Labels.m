@@ -11,10 +11,10 @@ function [class_label,label_time, CPR_time] = parse_Labels(ann_struct)
 % Low voltage suppression = class 6
 % Seizure = class 7
 % All other = class 8
-num_ann = size(ann_struct(1).data,2);
+num_ann = size(ann_struct.annotations,2);
 for i = 1:num_ann
-    ann_label = ann_struct(1).data(i).description;
-    label_time(i) = ann_struct(1).data(i).start./1e6;
+    ann_label = ann_struct.annotations{i}.description;
+    label_time(i) = ann_struct.annotations{i}.startOffsetMicros./1e6;
     if strcmp(ann_label,'Normal continuous')
         class_label(i) = 1;
     elseif strcmp(ann_label,'Normal discontinuous')
@@ -33,8 +33,8 @@ for i = 1:num_ann
         class_label(i) = 8;
     end
     
-    if strcmp(ann_struct(1).data(i).type,'CPR Onset')
-        CPR_time = ann_struct(1).data(i).start./1e6;
+    if strcmp(ann_struct.annotations{i}.type,'CPR Onset')
+        CPR_time = ann_struct.annotations{i}.startOffsetMicros./1e6;
     end
 end
 
