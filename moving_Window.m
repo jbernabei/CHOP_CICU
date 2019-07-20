@@ -1,6 +1,6 @@
 function features = moving_Window(values, fs, winLen, winDisp, featFn)
 
-%   correlation_Matrix.m
+%   moving_Window.m
 %   
 %   Inputs:
 %    
@@ -29,8 +29,8 @@ function features = moving_Window(values, fs, winLen, winDisp, featFn)
 %    Version:       1.0
 %    Last Revised:  July 2019
 %%
-    xLen = length(values); % length of signal
-    numWins = ceil(((xLen/fs)-(winLen-winDisp))/winDisp); % max number of full windows
+    xLen = size(values,2); % length of signal
+    numWins = ceil(((xLen/fs)-(winLen-winDisp))/winDisp) % max number of full windows
 
     samplesWin = winLen * fs; % number of samples in each window
     samplesDisp = winDisp * fs; % number of samples in each displacement window
@@ -38,10 +38,14 @@ function features = moving_Window(values, fs, winLen, winDisp, featFn)
     n=1; % initialize window counting
     firstSample = 1; % initialize sample counting
     features = []; % initialize array to store features
+    out = filter_channels(values); % checks channels for nans or constant values
+    values = values(out,:);
     while n <= numWins-1
-        values = values(firstSample:(firstSample+samplesWin-1)); % determine signal values for window
-        res = featFn(values,fs);
-        features = [features res']; % calculate features for window
+        values1 = values(:,firstSample:(firstSample+samplesWin-1)); % determine signal values for window
+        if sum(sum(isnan(values1)))==0
+            res = get_EEG_Features(values1,fs);
+            features = [features res']; % calculate features for window
+        end
 
         n = n+1; % advance window counter
         firstSample = firstSample + samplesDisp; % advance sample counter

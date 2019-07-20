@@ -1,4 +1,4 @@
-function [features] = get_EEG_Features(values,sampleRate)
+function [feats] = get_EEG_Features(vals,sampleRate)
 
 %   get_EEG_Features.m
 %   
@@ -28,48 +28,40 @@ function [features] = get_EEG_Features(values,sampleRate)
 %    Last Revised:  July 2019
 % 
 %% Do initial data processing
-% Do filtering
-order = 4; % Changed this from 5 to 4
-low_freq = 0.5; % Hz
-high_freq = 50; % Hz
-
-[b,a] = besself(order,[low_freq high_freq],'bandpass');
-[bz, az] = impinvar(b,a,sampleRate);
-values=filter(bz,az,values); % This is generating almost 50% Nans
 
 % Theta band power
 fcutlow1=4;   %low cut frequency in Hz
 fcuthigh1=8;   %high cut frequency in Hz
-p_theta = mean(bandpower(values,sampleRate,[fcutlow1 fcuthigh1]));
+p_theta = mean(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
+%v_theta = var(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
 
 % Alpha band power
 fcutlow2=8;   %low cut frequency in Hz    
 fcuthigh2=12; %high cut frequcency in Hz
-p_alpha = mean(bandpower(values,sampleRate,[fcutlow2 fcuthigh2]));
+p_alpha = mean(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
+%v_alpha = var(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
 
 % Filter for beta band
 fcutlow3=12;   %low cut frequency in Hz
 fcuthigh3=25;   %high cut frequency in Hz
-p_beta = mean(bandpower(values,sampleRate,[fcutlow3 fcuthigh3]));
+p_beta = mean(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
+%v_beta = var(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
 
-% Filter for 25-40 Hz low gamma band
-fcutlow4=25;   %low cut frequency in Hz
-fcuthigh4=40;   %high cut frequency in Hz
-p_lowgamma = mean(bandpower(values,sampleRate,[fcutlow4 fcuthigh4]));
+% % Filter for 25-40 Hz low gamma band
+% fcutlow4=25;   %low cut frequency in Hz
+% fcuthigh4=40;   %high cut frequency in Hz
+% p_lowgamma = mean(bandpower(vals',sampleRate,[fcutlow4 fcuthigh4]));
 
 % Calculate features based on linelength
-Line_length = sum(abs(diff(values)));
+Line_length = mean(sum(abs(diff(vals))));
+%v_LL = var(sum(abs(diff(vals))));
 
 % Calculate signal energy
-Energy = sum(values.^2);
+%Energy = mean(sum(vals.^2));
 
 % Calculate wavelet entropy
-Entropy = wentropy(values,'shannon');
-
-% Calculate ensemble synchrony
-adj_matrix = correlation_Matrix(values);
-Synch = mean(mean(adj_matrix));
+%Entropy = mean(wentropy(vals,'shannon'));
 
 % Return vector of features
-features = [p_theta p_alpha p_beta p_lowgamma Line_length Energy Entropy Synch];
+feats = [p_theta p_alpha p_beta Line_length];
 end

@@ -16,17 +16,23 @@
 %% Load data
 % User altered parameters
 % ieeg.org username and password
+clear all
 ID = 'jbernabei';
 PW = 'jbe_ieeglogin.bin';
 
 % List endings for patient IDs to use
-patient_ID = {'01','02','03','04','05','06','07'};
+patient_ID = {'01','02','03','04','05','06'};
 addpath(genpath('jsonlab-1.5'))
 
 %% Start session
 num_pts = size(patient_ID,2);
+all_train_feats = [];
+all_train_labels = [];
 
-for pt = 1:num_pts
+pt_ind = [1,2,5,6]
+
+for pt = pt_ind
+    pt
 session = IEEGSession(sprintf('CHOP_CICU_00%s',patient_ID{pt}),ID,PW);
 freq = session.data.sampleRate;
 
@@ -45,13 +51,34 @@ channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
 % Get number of data segments for supervised learning problem
 num_data_segments = length(class_label);
 length_data = 600; % 600 seconds = 10 minutes
+split_data_num = 3; % number of segments to split each length_data into
 
 % loop through data segments
 for i = 1:num_data_segments
-    full_raw_data = session.data.getvalues(ceil(label_time(i)*freq):ceil((label_time(i)+length_data)*freq), channel_nums_1)';
+    i
+    skip_segment = 0;
+    for j = 1:split_data_num
+        time_start = ceil((label_time(i)+length_data*(j-1)./split_data_num)*freq);
+        time_stop = ceil((label_time(i)+length_data*(j)./split_data_num)*freq);
+        full_raw_data = session.data.getvalues(time_start:time_stop, channel_nums_1)';
+        if sum(sum(isnan(full_raw_data))) == (size(full_raw_data,1).*size(full_raw_data,2))
+            skip_segment = 1;
+        end
     % Do feature calculation (in progress)
     size(full_raw_data)
+    if skip_segment==0    
+        placeholder_feats = moving_Window(full_raw_data, freq, 10, 1)';
+        real_feats(i).data(j,:) = [mean(placeholder_feats), var(placeholder_feats)];
+    end
+    end
+    
+    if skip_segment==0
+        patient_features((split_data_num*(i-1)+1):split_data_num*i,:) = real_feats(i).data;
+        patient_labels((split_data_num*(i-1)+1):split_data_num*i,1:2) = repmat([class_label(i),pt],split_data_num,1);
+    end
 end
+all_train_feats = [all_train_feats; patient_features];
+all_train_labels = [all_train_labels; patient_labels];
 end
 %% Save calculated feature matrix
 
