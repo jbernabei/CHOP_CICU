@@ -30,7 +30,7 @@ function [feats] = get_EEG_Features(vals,sampleRate)
 %% Do initial data processing
 
 % Theta band power
-fcutlow1=4;   %low cut frequency in Hz
+fcutlow1=2;   %low cut frequency in Hz
 fcuthigh1=8;   %high cut frequency in Hz
 p_theta = mean(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
 %v_theta = var(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
@@ -43,7 +43,7 @@ p_alpha = mean(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
 
 % Filter for beta band
 fcutlow3=12;   %low cut frequency in Hz
-fcuthigh3=25;   %high cut frequency in Hz
+fcuthigh3=20;   %high cut frequency in Hz
 p_beta = mean(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
 %v_beta = var(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
 
@@ -60,8 +60,8 @@ Line_length = mean(sum(abs(diff(vals))));
 %Energy = mean(sum(vals.^2));
 
 % Calculate wavelet entropy
-%Entropy = mean(wentropy(vals,'shannon'));
+Entropy = mean(wentropy(vals,'shannon'));
 
 % Return vector of features
-feats = [p_theta p_alpha p_beta Line_length];
+feats = [p_theta p_alpha p_beta Line_length Entropy];
 end

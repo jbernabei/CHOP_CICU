@@ -29,7 +29,7 @@ num_pts = size(patient_ID,2);
 all_train_feats = [];
 all_train_labels = [];
 
-pt_ind = [1,2,3,5,6]
+pt_ind = [1,2,3,4,5,6]
 
 for pt = pt_ind
     session = IEEGSession(sprintf('CHOP_CICU_00%s',patient_ID{pt}),ID,PW);
@@ -45,7 +45,7 @@ for pt = pt_ind
     time_offset = [];
 
     % Select channels
-    channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
+    channel_nums_1 = [1:5,8:10,12:14,16:20,24:27]; %For patients 1-7
     %channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
 
     % Get number of data segments for supervised learning problem
@@ -69,8 +69,8 @@ for pt = pt_ind
             end
         % Do feature calculation (in progress)
         if skip_segment==0    
-            placeholder_feats = moving_Window(full_raw_data, freq, 10, 1)';
-            real_feats(i).data(j,:) = [mean(placeholder_feats)];
+            placeholder_feats = moving_Window(full_raw_data, freq, 1, 0.1)';
+            real_feats(i).data(j,:) = [median(placeholder_feats), std(placeholder_feats)];
         end
         end
 
@@ -96,11 +96,14 @@ save('all_train_labels.mat','all_train_labels');
 num_correct = 0;
 for pt = pt_ind
     pt
-    X_train = all_train_feats(find(all_train_labels(:,2)~=pt),:);
+    [COEFF, SCORE, LATENT, TSQUARED, EXPLAINED, MU] = pca(all_train_feats);
+    X_pca = SCORE(:,1:5);
+    all_train_feats_zs = zscore(X_pca);
+    X_train = all_train_feats_zs(find(all_train_labels(:,2)~=pt),:);
     Y_train = all_train_labels(find(all_train_labels(:,2)~=pt),1);
-    X_test = all_train_feats(find(all_train_labels(:,2)==pt),:);
+    X_test = all_train_feats_zs(find(all_train_labels(:,2)==pt),:);
     Y_test = all_train_labels(find(all_train_labels(:,2)==pt),1);
-    mdl_rf = TreeBagger(40,X_train,Y_train,...
+    mdl_rf = TreeBagger(50,X_train,Y_train,...
                     'oobpred','On','Method','classification',...
                     'OOBVarImp','on'); 
     Y_pred  = predict(mdl_rf,X_test);
@@ -114,6 +117,20 @@ for pt = pt_ind
 end
 
 acc = num_correct./96
+
+%% Make cool plots
+color_dict = {'r','g','b','k','m','c'};
+shape_dict = {'o','+','s','d','x','.'};
+
+figure(1);clf
+hold on
+for qq = 1:96
+    data_i = [X_pca(qq,:),all_train_labels(qq,:)];
+    plot(data_i(2),data_i(1),sprintf('%s%s',color_dict{data_i(3)},shape_dict{data_i(4)}))
+end
+hold off
+
+
 %% Perform unsupervised feature learning
 % Search 5, 10, 20, 30, 60, 90, 120, 180, 240 mins before arrest
 % Here instead of 10 minute segments we will check 60 secs before & after
