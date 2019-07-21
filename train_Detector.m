@@ -29,65 +29,91 @@ num_pts = size(patient_ID,2);
 all_train_feats = [];
 all_train_labels = [];
 
-pt_ind = [1,2,5,6]
+pt_ind = [1,2,3,5,6]
 
 for pt = pt_ind
-    pt
-session = IEEGSession(sprintf('CHOP_CICU_00%s',patient_ID{pt}),ID,PW);
-freq = session.data.sampleRate;
+    session = IEEGSession(sprintf('CHOP_CICU_00%s',patient_ID{pt}),ID,PW);
+    fprintf('Calculating features on patient CHOP_CICU_00%s\n',patient_ID{pt})
+    freq = session.data.sampleRate;
 
-% Get labels
-%ann_struct(1).data = getEvents(session.data.annLayer,0);
-ann_struct = loadjson(sprintf('/Users/jbernabei/Downloads/CHOP_json/CHOP_CICU_%s_annotations_edit_new.iann_EEG labels.json',patient_ID{pt}));
-[class_label,label_time, CPR_time] = parse_Labels(ann_struct);
+    % Get labels
+    %ann_struct(1).data = getEvents(session.data.annLayer,0);
+    ann_struct = loadjson(sprintf('/Users/jbernabei/Downloads/CHOP_json/CHOP_CICU_%s_annotations_edit_new.iann_EEG labels.json',patient_ID{pt}));
+    [class_label,label_time, CPR_time] = parse_Labels(ann_struct);
 
-% Get features
-time_offset = [];
+    % Get features
+    time_offset = [];
 
-% Select channels
-channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
-%channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
+    % Select channels
+    channel_nums_1 = [1:5,8:14,16:20,24:27]; %For patients 1-7
+    %channel_nums_2 = [1:3,6:9,12:16,21:26]; %For patients 8+
 
-% Get number of data segments for supervised learning problem
-num_data_segments = length(class_label);
-length_data = 600; % 600 seconds = 10 minutes
-split_data_num = 3; % number of segments to split each length_data into
+    % Get number of data segments for supervised learning problem
+    num_data_segments = length(class_label);
+    length_data = 600; % 600 seconds = 10 minutes
+    split_data_num = 3; % number of segments to split each length_data into
 
-% loop through data segments
-for i = 1:num_data_segments
-    i
-    skip_segment = 0;
-    for j = 1:split_data_num
-        time_start = ceil((label_time(i)+length_data*(j-1)./split_data_num)*freq);
-        time_stop = ceil((label_time(i)+length_data*(j)./split_data_num)*freq);
-        full_raw_data = session.data.getvalues(time_start:time_stop, channel_nums_1)';
-        if sum(sum(isnan(full_raw_data))) == (size(full_raw_data,1).*size(full_raw_data,2))
-            skip_segment = 1;
+    patient_labels = [];
+    patient_features = [];
+
+    % loop through data segments
+    for i = 1:num_data_segments
+        fprintf('Calculating features on data segment %d\n',i)
+        skip_segment = 0;
+        for j = 1:split_data_num
+            time_start = ceil((label_time(i)+length_data*(j-1)./split_data_num)*freq);
+            time_stop = ceil((label_time(i)+length_data*(j)./split_data_num)*freq);
+            full_raw_data = session.data.getvalues(time_start:time_stop, channel_nums_1)';
+            if sum(sum(isnan(full_raw_data))) == (size(full_raw_data,1).*size(full_raw_data,2))
+                skip_segment = 1;
+            end
+        % Do feature calculation (in progress)
+        if skip_segment==0    
+            placeholder_feats = moving_Window(full_raw_data, freq, 10, 1)';
+            real_feats(i).data(j,:) = [mean(placeholder_feats)];
         end
-    % Do feature calculation (in progress)
-    size(full_raw_data)
-    if skip_segment==0    
-        placeholder_feats = moving_Window(full_raw_data, freq, 10, 1)';
-        real_feats(i).data(j,:) = [mean(placeholder_feats), var(placeholder_feats)];
+        end
+
+        if skip_segment==0
+            patient_features((split_data_num*(i-1)+1):split_data_num*i,:) = real_feats(i).data;
+            patient_labels((split_data_num*(i-1)+1):split_data_num*i,1:2) = repmat([class_label(i),pt],split_data_num,1);
+        end
     end
-    end
-    
-    if skip_segment==0
-        patient_features((split_data_num*(i-1)+1):split_data_num*i,:) = real_feats(i).data;
-        patient_labels((split_data_num*(i-1)+1):split_data_num*i,1:2) = repmat([class_label(i),pt],split_data_num,1);
-    end
+    all_train_feats = [all_train_feats; patient_features];
+    all_train_labels = [all_train_labels; patient_labels];
 end
-all_train_feats = [all_train_feats; patient_features];
-all_train_labels = [all_train_labels; patient_labels];
-end
+all_train_feats(find(all_train_labels(:,1)==0),:) = [];
+all_train_labels(find(all_train_labels(:,1)==0),:) = [];
+
+
 %% Save calculated feature matrix
+
+save('all_train_feats.mat','all_train_feats');
+save('all_train_labels.mat','all_train_labels');
 
 %% Train classifier and perform CV
 % Split data into folds
+num_correct = 0;
+for pt = pt_ind
+    pt
+    X_train = all_train_feats(find(all_train_labels(:,2)~=pt),:);
+    Y_train = all_train_labels(find(all_train_labels(:,2)~=pt),1);
+    X_test = all_train_feats(find(all_train_labels(:,2)==pt),:);
+    Y_test = all_train_labels(find(all_train_labels(:,2)==pt),1);
+    mdl_rf = TreeBagger(40,X_train,Y_train,...
+                    'oobpred','On','Method','classification',...
+                    'OOBVarImp','on'); 
+    Y_pred  = predict(mdl_rf,X_test);
+    Y_test_parse = cellstr(num2str(Y_test));
+    test_bool = [];
+    for q = 1:size(Y_pred,1)
+        test_bool(q) = (Y_pred{q}==Y_test_parse{q});
+    end
+    test_bool
+    num_correct = num_correct+sum(test_bool);
+end
 
-% Random forest
-% LASSO
-
+acc = num_correct./96
 %% Perform unsupervised feature learning
 % Search 5, 10, 20, 30, 60, 90, 120, 180, 240 mins before arrest
 % Here instead of 10 minute segments we will check 60 secs before & after

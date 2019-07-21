@@ -30,7 +30,7 @@ function features = moving_Window(values, fs, winLen, winDisp, featFn)
 %    Last Revised:  July 2019
 %%
     xLen = size(values,2); % length of signal
-    numWins = ceil(((xLen/fs)-(winLen-winDisp))/winDisp) % max number of full windows
+    numWins = ceil(((xLen/fs)-(winLen-winDisp))/winDisp); % max number of full windows
 
     samplesWin = winLen * fs; % number of samples in each window
     samplesDisp = winDisp * fs; % number of samples in each displacement window
@@ -39,6 +39,7 @@ function features = moving_Window(values, fs, winLen, winDisp, featFn)
     firstSample = 1; % initialize sample counting
     features = []; % initialize array to store features
     out = filter_channels(values); % checks channels for nans or constant values
+    fprintf('Removed %d channels\n',(size(values,1)-length(out)))
     values = values(out,:);
     while n <= numWins-1
         values1 = values(:,firstSample:(firstSample+samplesWin-1)); % determine signal values for window
