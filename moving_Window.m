@@ -29,6 +29,7 @@ function features = moving_Window(values, fs, winLen, winDisp)
 %    Version:       1.0
 %    Last Revised:  July 2019
 %%
+    problem_rows = [];
     xLen = size(values,2); % length of signal
     numWins = ceil(((xLen/fs)-(winLen-winDisp))/winDisp); % max number of full windows
 
@@ -41,6 +42,9 @@ function features = moving_Window(values, fs, winLen, winDisp)
     out = filter_channels(values,fs); % checks channels for nans or constant values
     fprintf('Removed %d channels\n',(size(values,1)-length(out)))
     values = values(out,:);
+    
+    
+    
     while n <= numWins-1
         values1 = values(:,firstSample:(firstSample+samplesWin-1)); % determine signal values for window
         if sum(sum(isnan(values1)))==0
@@ -51,3 +55,11 @@ function features = moving_Window(values, fs, winLen, winDisp)
         n = n+1; % advance window counter
         firstSample = firstSample + samplesDisp; % advance sample counter
     end
+    
+    % Remove samples which are clearly artifactual
+    problem_rows = find(max(abs(zscore(features)),2)>2.5);
+    if ~isempty(problem_rows)
+        features(problem_rows,:) = [];
+        fprintf('Removed %d sub-windows because z score was > 3\n',length(problem_rows))
+    end
+end

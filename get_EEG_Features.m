@@ -32,36 +32,44 @@ function [feats] = get_EEG_Features(vals,sampleRate)
 % Theta band power
 fcutlow1=2;   %low cut frequency in Hz
 fcuthigh1=8;   %high cut frequency in Hz
-p_theta = mean(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
+p_theta = median(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
 %v_theta = var(bandpower(vals',sampleRate,[fcutlow1 fcuthigh1]));
 
 % Alpha band power
 fcutlow2=8;   %low cut frequency in Hz    
 fcuthigh2=12; %high cut frequcency in Hz
-p_alpha = mean(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
+p_alpha = median(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
 %v_alpha = var(bandpower(vals',sampleRate,[fcutlow2 fcuthigh2]));
 
 % Filter for beta band
 fcutlow3=12;   %low cut frequency in Hz
 fcuthigh3=20;   %high cut frequency in Hz
-p_beta = mean(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
+p_beta = median(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
 %v_beta = var(bandpower(vals',sampleRate,[fcutlow3 fcuthigh3]));
 
-% % Filter for 25-40 Hz low gamma band
-% fcutlow4=25;   %low cut frequency in Hz
-% fcuthigh4=40;   %high cut frequency in Hz
-% p_lowgamma = mean(bandpower(vals',sampleRate,[fcutlow4 fcuthigh4]));
-
 % Calculate features based on linelength
-Line_length = mean(sum(abs(diff(vals))));
+Line_length = median(sum(abs(diff(vals))));
 %v_LL = var(sum(abs(diff(vals))));
 
 % Calculate signal energy
 %Energy = mean(sum(vals.^2));
 
+% Calculate envelope
+[yupper,ylower] = envelope(vals);
+upper_env = median(median(yupper));
+
+% Skewness
+Skew = median(median(skewness(vals)));
+
+% Kurtosis
+Kurt = median(median(kurtosis(vals)));
+
 % Calculate wavelet entropy
-Entropy = mean(wentropy(vals,'shannon'));
+Entropy = median(wentropy(vals,'shannon'));
+
+% Correlation_Matrix
+%Synch = median(median(correlation_Matrix(vals)));
 
 % Return vector of features
-feats = [p_theta p_alpha p_beta Line_length Entropy];
+feats = [p_theta p_alpha p_beta Line_length upper_env Skew Kurt Entropy];
 end

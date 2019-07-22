@@ -19,12 +19,12 @@ for i = 1:num_ann
     get_label = 0;
     if strcmp(ann_label,'Normal Continuity') || strcmp(ann_label,'Continuity') || strcmp(ann_label,'Continuous')
         class_label(ann_count) = 1; get_label = 1;
-    elseif strcmp(ann_label,'Normal Discontinuity')
+    elseif strcmp(ann_label,'Normal Discontinuity') || strcmp(ann_label,'Excessive Discontinuity')
         class_label(ann_count) = 2; get_label = 1;
     elseif strcmp(ann_label,'Continuous Low Voltage')
         class_label(ann_count) = 3; get_label = 1;
-    elseif strcmp(ann_label,'Excessive Discontinuity')
-        class_label(ann_count) = 4; get_label = 1;
+    %elseif strcmp(ann_label,'Excessive Discontinuity')
+    %    class_label(ann_count) = 4; get_label = 1;
     elseif strcmp(ann_label,'Low Voltage Suppression')
         class_label(ann_count) = 5; get_label = 1;
     end
